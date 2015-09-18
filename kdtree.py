@@ -67,7 +67,7 @@ def get_nearest(kd_node, point, dim, dist_func, return_distances=True, i=0, best
 
 """
 If you want to attach other properties to your points, 
-you can use thisclass or subclass it.
+you can use this class or subclass it.
 
 Usage:
 
