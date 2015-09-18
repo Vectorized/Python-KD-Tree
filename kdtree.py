@@ -8,7 +8,8 @@ Usage:
 2. You can then use `get_knn` for k nearest neighbors or 
    `get_nearest` for the nearest neighbor
 
-points are be a list of points: [[0, 1, 2], [12.3, 4.5, 2.3], ...]
+points is list of points: [[0, 1, 2], [12.3, 4.5, 2.3], ...]
+or whatever that can be accessed like a list.
 """
 
 # Makes the KD-Tree far fast lookup
