@@ -67,19 +67,24 @@ def get_nearest(kd_node, point, dim, dist_func, return_distances=True, i=0, best
 
 """
 If you want to attach other properties to your points, 
-you can use this class or subclass it.
+you can use thisclass or subclass it.
 
 Usage:
 
-point = PointContainer([1,2,3])
-point.label = True  
-print point         # [1,2,3]
-print point.label   # True 
+coors = [[1, 2], [3, 4]]
+labels = ["A", "B"]
+
+points = [PointContainer(p).set(label=l) for p, l in zip(coors, labels)]
+print points                     # [[1, 2], [3, 4]]
+print [p.label for p in points]  # ['A', 'B']
+
 """
 class PointContainer(list):
-    def __new__(self, value, name = None, values = None):
-        s = super(PointContainer, self).__new__(self, value)
-        return s
+    def __new__(self, value):
+        return super(PointContainer, self).__new__(self, value)
+    def set(self, label):
+        self.label = label
+        return self
 
 
 """
@@ -114,9 +119,9 @@ def dist_sq_dim(a, b):
     return dist_sq(a, b, dim)
 
 
-points = [PointContainer(rand_point(dim)) for x in xrange(5000)]
+points = [PointContainer(rand_point(dim)).set(label=random.random()) for x in xrange(5000)]
 #points = [rand_point(dim) for x in xrange(5000)]
-test = [rand_point(dim) for x in xrange(1000)]
+test = [rand_point(dim) for x in xrange(500)]
 result1 = []
 result2 = []
 
@@ -154,7 +159,3 @@ You can also define the distance function inline, like:
 print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: dist_sq(a, b, dim))
 print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: sum((a[i] - b[i]) ** 2 for i in xrange(dim)))
 """
-
-
-
-
