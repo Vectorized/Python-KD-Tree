@@ -29,16 +29,11 @@ def add_point(kd_node, point, dim, i=0):
     if kd_node is not None:
         dx = kd_node[2][i] - point[i]
         i = (i + 1) % dim
-        if dx >= 0:
-            if kd_node[0] is None:
-                kd_node[0] = [None, None, point]
-            else:
-                add_point(kd_node[0], point, dim, i)
-        elif dx < 0:
-            if kd_node[1] is None:
-                kd_node[1] = [None, None, point]
-            else:
-                add_point(kd_node[1], point, dim, i)
+        for j, c in ((0, dx >= 0), (1, dx < 0)):
+            if c and kd_node[j] is None:
+                kd_node[j] = [None, None, point]
+            elif c:
+                add_point(kd_node[j], point, dim, i)
 
 # k nearest neighbors
 def get_knn(kd_node, point, k, dim, dist_func, return_distances=True, i=0, heap=None):
@@ -127,7 +122,7 @@ def dist_sq_dim(a, b):
     return dist_sq(a, b, dim)
 
 
-points = [PointContainer(rand_point(dim)) for x in range(500)]
+points = [PointContainer(rand_point(dim)) for x in range(5000)]
 additional_points = [PointContainer(rand_point(dim)) for x in range(50)]
 #points = [rand_point(dim) for x in range(5000)]
 test = [rand_point(dim) for x in range(100)]
@@ -171,5 +166,7 @@ You can also define the distance function inline, like:
 print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: dist_sq(a, b, dim))
 print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: sum((a[i] - b[i]) ** 2 for i in range(dim)))
 """
+
+
 
 
