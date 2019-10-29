@@ -11,7 +11,7 @@ Usage:
 points are be a list of points: [[0, 1, 2], [12.3, 4.5, 2.3], ...]
 """
 
-# Makes the KD-Tree far fast lookup
+# Makes the KD-Tree for fast lookup
 def make_kd_tree(points, dim, i=0):
     if len(points) > 1:
         points.sort(key=lambda x: x[i])
@@ -20,7 +20,8 @@ def make_kd_tree(points, dim, i=0):
         return [
             make_kd_tree(points[: half], dim, i),
             make_kd_tree(points[half + 1:], dim, i),
-            points[half]]
+            points[half]
+        ]
     elif len(points) == 1:
         return [None, None, points[0]]
 
@@ -99,7 +100,7 @@ import random, cProfile
 
 def puts(l):
     for x in l:
-        print x
+        print(x)
 
 
 def get_knn_naive(points, point, k, dist_func, return_distances=True):
@@ -122,7 +123,7 @@ def dist_sq_dim(a, b):
     return dist_sq(a, b, dim)
 
 
-points = [PointContainer(rand_point(dim)) for x in range(5000)]
+points = [PointContainer(rand_point(dim)) for x in range(10000)]
 additional_points = [PointContainer(rand_point(dim)) for x in range(50)]
 #points = [rand_point(dim) for x in range(5000)]
 test = [rand_point(dim) for x in range(100)]
@@ -149,16 +150,16 @@ cProfile.run("bench1()")
 cProfile.run("bench2()")
 
 puts(result1[0])
-print
+print("")
 puts(result2[0])
-print
+print("")
 
-print "Is the result same as naive version?: %s" % (result1 == result2)
+print("Is the result same as naive version?: {}".format(result1 == result2))
 
-print
+print("")
 kd_tree = make_kd_tree(points, dim)
 
-print get_nearest(kd_tree, [0] * dim, dim, dist_sq_dim)
+print(get_nearest(kd_tree, [0] * dim, dim, dist_sq_dim))
 
 """
 You can also define the distance function inline, like:
@@ -166,7 +167,6 @@ You can also define the distance function inline, like:
 print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: dist_sq(a, b, dim))
 print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: sum((a[i] - b[i]) ** 2 for i in range(dim)))
 """
-
 
 
 
