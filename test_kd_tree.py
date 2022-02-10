@@ -6,6 +6,7 @@ from kd_tree import *
 class KDTreeUnitTest(unittest.TestCase):
 
     def test_all(self):
+
         dim = 3
 
         def dist_sq_func(a, b):
@@ -28,8 +29,8 @@ class KDTreeUnitTest(unittest.TestCase):
         def rand_point(dim):
             return [random.uniform(-1, 1) for d in range(dim)]
 
-        points = [rand_point(dim) for x in range(10000)]
-        additional_points = [rand_point(dim) for x in range(50)]
+        points = [rand_point(dim) for x in range(100)]
+        additional_points = [rand_point(dim) for x in range(100)]
         query_points = [rand_point(dim) for x in range(100)]
 
         kd_tree_results = []
@@ -39,6 +40,7 @@ class KDTreeUnitTest(unittest.TestCase):
         global test_and_bench_naive
 
         def test_and_bench_kd_tree():
+            global kd_tree
             kd_tree = KDTree(points, dim)
             for point in additional_points:
                 kd_tree.add_point(point)
@@ -58,12 +60,18 @@ class KDTreeUnitTest(unittest.TestCase):
 
         print("Running KDTree...")
         cProfile.run("test_and_bench_kd_tree()")
+        
         print("Running naive version...")
         cProfile.run("test_and_bench_naive()")
 
-        print("Is the result same as naive version?: {}"
+        print("Query results same as naive version?: {}"
             .format(kd_tree_results == naive_results))
-        self.assertEqual(kd_tree_results, naive_results, 'Results mismatch')
+        
+        self.assertEqual(kd_tree_results, naive_results, 
+            "Query results mismatch")
+        
+        self.assertEqual(len(list(kd_tree)), len(points) + len(additional_points), 
+            "Number of points from iterator mismatch")
 
 if __name__ == '__main__':
     unittest.main()

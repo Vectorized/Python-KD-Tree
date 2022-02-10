@@ -73,12 +73,23 @@ class KDTree(object):
                 return [(-h[0], h[2]) if return_dist_sq else h[2] 
                     for h in sorted(heap)][::-1]
 
+        def walk(node):
+            if node is not None:
+                for j in 0, 1:
+                    for x in walk(node[j]):
+                        yield x
+                yield node[2]
+
         self._add_point = add_point
         self._get_knn = get_knn 
         self._root = make(points)
+        self._walk = walk
+
+    def __iter__(self):
+        return self._walk(self._root)
         
     def add_point(self, point):
-        """Adds a point to the kd-tree
+        """Adds a point to the kd-tree.
         
         Parameters
         ----------
@@ -91,7 +102,7 @@ class KDTree(object):
             self._add_point(self._root, point)
 
     def get_knn(self, point, k, return_dist_sq=True):
-        """Returns k nearest neighbors
+        """Returns k nearest neighbors.
 
         Parameters
         ----------
