@@ -23,13 +23,14 @@ class KDTree(object):
 
         Parameters
         ----------
-        points : list<list or array>
+        points : list<point>
             A list of points.
         dim : int 
             The dimension of the points. 
         dist_sq_func : function(point, point), optional
             A function that returns the squared Euclidean distance
             between the two points. 
+            If omitted, it uses the default implementation.
         """
 
         if dist_sq_func is None:

@@ -29,7 +29,7 @@ class KDTreeUnitTest(unittest.TestCase):
         def rand_point(dim):
             return [random.uniform(-1, 1) for d in range(dim)]
 
-        points = [rand_point(dim) for x in range(100)]
+        points = [rand_point(dim) for x in range(10000)]
         additional_points = [rand_point(dim) for x in range(100)]
         query_points = [rand_point(dim) for x in range(100)]
 
