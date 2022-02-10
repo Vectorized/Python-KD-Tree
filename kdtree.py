@@ -1,172 +1,197 @@
-"""
-A super short KD-Tree for points...
-so concise that you can copypasta into your homework without arousing suspicion.
+class KDTree(object):
+    
+    """
+    A super short KD-Tree for points...
+    so concise that you can copypasta into your homework 
+    without arousing suspicion.
+
+    This implementation only supports Euclidean distance. 
+
+    The points can be any array-like type, e.g: 
+        lists, tuples, numpy arrays.
+
+    Usage:
+    1. Make the KD-Tree:
+        `kd_tree = KDTree(points, dim)`
+    2. You can then use `get_knn` for k nearest neighbors or 
+       `get_nearest` for the nearest neighbor
+
+    points are be a list of points: [[0, 1, 2], [12.3, 4.5, 2.3], ...]
+    """
+    def __init__(self, points, dim, dist_sq_func=None):
+        """Makes the KD-Tree for fast lookup.
+
+        Parameters
+        ----------
+        points : list<list or array>
+            A list of points.
+        dim : int 
+            The dimension of the points. 
+        dist_sq_func : function(point, point), optional
+            A function that returns the squared Euclidean distance
+            between the two points. 
+        """
+
+        if dist_sq_func is None:
+            dist_sq_func = lambda a, b: sum((x - b[i]) ** 2 
+                for i, x in enumerate(a))
+                
+        def make(points, i=0):
+            if len(points) > 1:
+                points.sort(key=lambda x: x[i])
+                i = (i + 1) % dim
+                m = len(points) >> 1
+                return [make(points[:m], i), make(points[m + 1:], i), 
+                    points[m]]
+            if len(points) == 1:
+                return [None, None, points[0]]
+        
+        def add_point(node, point, i=0):
+            if node is not None:
+                dx = node[2][i] - point[i]
+                for j, c in ((0, dx >= 0), (1, dx < 0)):
+                    if c and node[j] is None:
+                        node[j] = [None, None, point]
+                    elif c:
+                        add_point(node[j], point, (i + 1) % dim)
+
+        import heapq
+        def get_knn(node, point, k, return_dist_sq, heap, i=0, tiebreaker=1):
+            if node is not None:
+                dist_sq = dist_sq_func(point, node[2])
+                dx = node[2][i] - point[i]
+                if len(heap) < k:
+                    heapq.heappush(heap, (-dist_sq, tiebreaker, node[2]))
+                elif dist_sq < -heap[0][0]:
+                    heapq.heappushpop(heap, (-dist_sq, tiebreaker, node[2]))
+                i = (i + 1) % dim
+                # Goes into the left branch, then the right branch if needed
+                for b in (dx < 0, dx >= 0)[:1 + (dx * dx < -heap[0][0])]:
+                    get_knn(node[b], point, k, return_dist_sq, 
+                        heap, i, (tiebreaker << 1) | b)
+            if tiebreaker == 1:
+                return [(-h[0], h[2]) if return_dist_sq else h[2] 
+                    for h in sorted(heap)][::-1]
+
+        self._add_point = add_point
+        self._get_knn = get_knn 
+        self._root = make(points)
+        
+    def add_point(self, point):
+        """Adds a point to the kd-tree
+        
+        Parameters
+        ----------
+        point : array-like
+            The point.
+        """
+        if self._root is None:
+            self._root = [None, None, point]
+        else:
+            self._add_point(self._root, point)
+
+    def get_knn(self, point, k, return_dist_sq=True):
+        """Returns k nearest neighbors
+
+        Parameters
+        ----------
+        point : array-like
+            The point.
+        k: int 
+            The number of nearest neighbors.
+        return_dist_sq : boolean
+            Whether to return the squared Euclidean distances.
+
+        Returns
+        -------
+        list<array-like>
+            The nearest neighbors. 
+            If `return_dist_sq` is true, the return will be:
+                [(dist_sq, point), ...]
+            else:
+                [point, ...]
+        """
+        return self._get_knn(self._root, point, k, return_dist_sq, [])
+
+    def get_nearest(self, point, return_dist_sq=True):
+        """Returns the nearest neighbor.
+
+        Parameters
+        ----------
+        point : array-like
+            The point.
+        return_dist_sq : boolean
+            Whether to return the squared Euclidean distance.
+
+        Returns
+        -------
+        array-like
+            The nearest neighbor. 
+            If the tree is empty, returns `None`.
+            If `return_dist_sq` is true, the return will be:
+                (dist_sq, point)
+            else:
+                point
+        """
+        l = self._get_knn(self._root, point, 1, return_dist_sq, [])
+        return l[0] if len(l) else None
 
 
-Usage:
-1. Use make_kd_tree to create the kd
-2. You can then use `get_knn` for k nearest neighbors or 
-   `get_nearest` for the nearest neighbor
+if __name__ == '__main__':
 
-points are be a list of points: [[0, 1, 2], [12.3, 4.5, 2.3], ...]
-"""
+    import random, cProfile
 
-# Makes the KD-Tree for fast lookup
-def make_kd_tree(points, dim, i=0):
-    if len(points) > 1:
-        points.sort(key=lambda x: x[i])
-        i = (i + 1) % dim
-        half = len(points) >> 1
-        return [
-            make_kd_tree(points[: half], dim, i),
-            make_kd_tree(points[half + 1:], dim, i),
-            points[half]
-        ]
-    elif len(points) == 1:
-        return [None, None, points[0]]
+    dim = 3
 
-# Adds a point to the kd-tree
-def add_point(kd_node, point, dim, i=0):
-    if kd_node is not None:
-        dx = kd_node[2][i] - point[i]
-        i = (i + 1) % dim
-        for j, c in ((0, dx >= 0), (1, dx < 0)):
-            if c and kd_node[j] is None:
-                kd_node[j] = [None, None, point]
-            elif c:
-                add_point(kd_node[j], point, dim, i)
+    def dist_sq_func(a, b):
+        return sum((x - b[i]) ** 2 for i, x in enumerate(a))
 
-# k nearest neighbors
-def get_knn(kd_node, point, k, dim, dist_func, return_distances=True, i=0, heap=None):
-    import heapq
-    is_root = not heap
-    if is_root:
-        heap = []
-    if kd_node is not None:
-        dist = dist_func(point, kd_node[2])
-        dx = kd_node[2][i] - point[i]
-        if len(heap) < k:
-            heapq.heappush(heap, (-dist, kd_node[2]))
-        elif dist < -heap[0][0]:
-            heapq.heappushpop(heap, (-dist, kd_node[2]))
-        i = (i + 1) % dim
-        # Goes into the left branch, and then the right branch if needed
-        for b in [dx < 0] + [dx >= 0] * (dx * dx < -heap[0][0]):
-            get_knn(kd_node[b], point, k, dim, dist_func, return_distances, i, heap)
-    if is_root:
-        neighbors = sorted((-h[0], h[1]) for h in heap)
-        return neighbors if return_distances else [n[1] for n in neighbors]
+    def get_knn_naive(points, point, k, return_dist_sq=True):
+        neighbors = []
+        for i, pp in enumerate(points):
+            dist_sq = dist_sq_func(point, pp)
+            neighbors.append((dist_sq, pp))
+        neighbors = sorted(neighbors)[:k]
+        return neighbors if return_dist_sq else [n[1] for n in neighbors]
 
-# For the closest neighbor
-def get_nearest(kd_node, point, dim, dist_func, return_distances=True, i=0, best=None):
-    if kd_node is not None:
-        dist = dist_func(point, kd_node[2])
-        dx = kd_node[2][i] - point[i]
-        if not best:
-            best = [dist, kd_node[2]]
-        elif dist < best[0]:
-            best[0], best[1] = dist, kd_node[2]
-        i = (i + 1) % dim
-        # Goes into the left branch, and then the right branch if needed
-        for b in [dx < 0] + [dx >= 0] * (dx * dx < best[0]):
-            get_nearest(kd_node[b], point, dim, dist_func, return_distances, i, best)
-    return best if return_distances else best[1]
+    def get_nearest_naive(points, point, return_dist_sq=True):
+        nearest = min(points, key=lambda p:dist_sq_func(p, point))
+        if return_dist_sq:
+            return (dist_sq_func(nearest, point), nearest) 
+        return nearest
 
+    def rand_point(dim):
+        return [random.uniform(-1, 1) for d in range(dim)]
 
+    points = [rand_point(dim) for x in range(10000)]
+    additional_points = [rand_point(dim) for x in range(50)]
+    query_points = [rand_point(dim) for x in range(100)]
 
-"""
-If you want to attach other properties to your points, 
-you can use this class or subclass it.
+    kd_tree_results = []
+    naive_results = []
 
-Usage:
+    def test_and_bench_kd_tree():
+        kd_tree = KDTree(points, dim)
+        for point in additional_points:
+            kd_tree.add_point(point)
+        kd_tree_results.append(tuple(kd_tree.get_knn([0] * dim, 8)))
+        for t in query_points:
+            kd_tree_results.append(tuple(kd_tree.get_knn(t, 8)))
+        for t in query_points:
+            kd_tree_results.append(tuple(kd_tree.get_nearest(t)))
 
-point = PointContainer([1,2,3])
-point.label = True  
-print point         # [1,2,3]
-print point.label   # True 
-"""
-class PointContainer(list):
-    def __new__(self, value, name = None, values = None):
-        s = super(PointContainer, self).__new__(self, value)
-        return s
+    def test_and_bench_naive():
+        all_points = points + additional_points
+        naive_results.append(tuple(get_knn_naive(all_points, [0] * dim, 8)))
+        for t in query_points:
+            naive_results.append(tuple(get_knn_naive(all_points, t, 8)))
+        for t in query_points:
+            naive_results.append(tuple(get_nearest_naive(all_points, t)))
 
+    print("Testing and benchmarking KDTree...")
+    cProfile.run("test_and_bench_kd_tree()")
+    print("Testing and benchmarking naive version...")
+    cProfile.run("test_and_bench_naive()")
 
-"""
-Below is all the testing code
-"""
-
-import random, cProfile
-
-
-def puts(l):
-    for x in l:
-        print(x)
-
-
-def get_knn_naive(points, point, k, dist_func, return_distances=True):
-    neighbors = []
-    for i, pp in enumerate(points):
-        dist = dist_func(point, pp)
-        neighbors.append((dist, pp))
-    neighbors = sorted(neighbors)[:k]
-    return neighbors if return_distances else [n[1] for n in neighbors]
-
-dim = 3
-
-def rand_point(dim):
-    return [random.uniform(-1, 1) for d in range(dim)]
-
-def dist_sq(a, b, dim):
-    return sum((a[i] - b[i]) ** 2 for i in range(dim))
-
-def dist_sq_dim(a, b):
-    return dist_sq(a, b, dim)
-
-
-points = [PointContainer(rand_point(dim)) for x in range(10000)]
-additional_points = [PointContainer(rand_point(dim)) for x in range(50)]
-#points = [rand_point(dim) for x in range(5000)]
-test = [rand_point(dim) for x in range(100)]
-result1 = []
-result2 = []
-
-
-def bench1():
-    kd_tree = make_kd_tree(points, dim)
-    for point in additional_points:
-        add_point(kd_tree, point, dim)
-    result1.append(tuple(get_knn(kd_tree, [0] * dim, 8, dim, dist_sq_dim)))
-    for t in test:
-        result1.append(tuple(get_knn(kd_tree, t, 8, dim, dist_sq_dim)))
-
-
-def bench2():
-    all_points = points + additional_points
-    result2.append(tuple(get_knn_naive(all_points, [0] * dim, 8, dist_sq_dim)))
-    for t in test:
-        result2.append(tuple(get_knn_naive(all_points, t, 8, dist_sq_dim)))
-
-cProfile.run("bench1()")
-cProfile.run("bench2()")
-
-puts(result1[0])
-print("")
-puts(result2[0])
-print("")
-
-print("Is the result same as naive version?: {}".format(result1 == result2))
-
-print("")
-kd_tree = make_kd_tree(points, dim)
-
-print(get_nearest(kd_tree, [0] * dim, dim, dist_sq_dim))
-
-"""
-You can also define the distance function inline, like:
-
-print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: dist_sq(a, b, dim))
-print get_nearest(kd_tree, [0] * dim, dim, lambda a,b: sum((a[i] - b[i]) ** 2 for i in range(dim)))
-"""
-
-
-
+    print("Is the result same as naive version?: {}"
+        .format(kd_tree_results == naive_results))
