@@ -39,7 +39,10 @@ class KDTree(object):
                 
         def make(points, i=0):
             if len(points) > 1:
-                points.sort(key=lambda x: x[i])
+                try:
+                    points.sort(key=lambda x: x[i]) # list|tuple
+                except TypeError:
+                    points.sort(axis=i) # np.ndarray
                 i = (i + 1) % dim
                 m = len(points) >> 1
                 return [make(points[:m], i), make(points[m + 1:], i), 
@@ -68,7 +71,7 @@ class KDTree(object):
                 i = (i + 1) % dim
                 # Goes into the left branch, then the right branch if needed
                 for b in (dx < 0, dx >= 0)[:1 + (dx * dx < -heap[0][0])]:
-                    get_knn(node[b], point, k, return_dist_sq, 
+                    get_knn(node[int(b)], point, k, return_dist_sq, 
                         heap, i, (tiebreaker << 1) | b)
             if tiebreaker == 1:
                 return [(-h[0], h[2]) if return_dist_sq else h[2] 
